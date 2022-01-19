@@ -8,13 +8,13 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.google.zxing.BarcodeFormat
@@ -37,6 +38,8 @@ class MainActivity : ComponentActivity() {
     private val scope = this
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
         setContent {
 
             QRGeneratorTheme {
@@ -50,7 +53,6 @@ class MainActivity : ComponentActivity() {
                     topBar = {
                         TopAppBar(
                             title = { Text(text = "QR Generator") },
-                            contentColor = MaterialTheme.colors.primary,
                         )
                     }
                 ) {
@@ -59,7 +61,7 @@ class MainActivity : ComponentActivity() {
                     Surface(color = MaterialTheme.colors.background) {
                         Column(
                             Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
+                            verticalArrangement = Arrangement.Top,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             var bitmap by remember {
@@ -74,7 +76,6 @@ class MainActivity : ComponentActivity() {
                                 bitmap = generateQRCode(text)
                             }
 
-                            val infiniteTransition = rememberInfiniteTransition()
 
                             var uri: Uri? = null
                             val label = remember {
@@ -82,12 +83,12 @@ class MainActivity : ComponentActivity() {
                             }
 
 
+                            Spacer(modifier = Modifier.height(20.dp))
                             Image(
                                 bitmap = bitmap.asImageBitmap(),
                                 contentDescription = "",
                                 modifier = Modifier
                                     .padding(20.dp)
-                                    .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(androidx.compose.ui.graphics.Color.White)
                                     .border(
@@ -113,24 +114,37 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                     },
-                                contentScale = ContentScale.FillWidth
+                                contentScale = ContentScale.Fit
                             )
 
-                            TextField(value = text,
+                            OutlinedTextField(value = text,
                                 onValueChange = {
-                                    text = it
+                                    text = if (it.isNotBlank() && (it.last()-'0')>127) {
+                                        coroutineScope.launch {
+                                            snackBarState.showSnackbar(
+                                                "this character not allowed",
+                                                duration = SnackbarDuration.Short,
+                                                actionLabel = "okay"
+                                            )
+                                        }
+                                        it.substring(0,it.lastIndex-1)
+                                    } else it
                                     uri = null
-                                    label.value = "tap image to share qr"
+                                    label.value = if(it.isNotBlank()) "tap image to share qr"
+                                    else "Enter anything to generate qr"
                                 },
                                 modifier = Modifier
                                     .padding(20.dp)
                                     .fillMaxWidth(),
-                                label = { Text(text = label.value) }
+                                label = { Text(text = label.value) },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Text
+                                )
                             )
 
                         }
 
-                        SnackbarHost(hostState = snackBarState)
+                        SnackbarHost(hostState = snackBarState, modifier = Modifier.offset(0.dp, 100.dp))
 
                     }
                 }
