@@ -119,7 +119,7 @@ class MainActivity : ComponentActivity() {
 
                             OutlinedTextField(value = text,
                                 onValueChange = {
-                                    text = if (it.isNotBlank() && (it.last()-'0')>127) {
+                                    text = if (it.isNotBlank() && (it.last().code)>127) {
                                         coroutineScope.launch {
                                             snackBarState.showSnackbar(
                                                 "this character not allowed",
@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
                                                 actionLabel = "okay"
                                             )
                                         }
-                                        it.substring(0,it.lastIndex-1)
+                                        it.substring(0,it.lastIndex- if (it.last().code>32767)1 else 0)
                                     } else it
                                     uri = null
                                     label.value = if(it.isNotBlank()) "tap image to share qr"
